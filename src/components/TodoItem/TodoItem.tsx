@@ -23,15 +23,16 @@ export const TodoItem: React.FC<Props> = ({
   onToggleStatus,
   onTitleEdit,
 }) => {
+  const { title, id, completed } = todo;
   const [isEditFormActive, setIsEditFormActive] = useState(false);
-  const [newTitle, setNewTitle] = useState(`${todo.title}`);
+  const [newTitle, setNewTitle] = useState(`${title}`);
 
   const editTitle = () => {
     const promise = newTitle
-      ? newTitle === todo.title
+      ? newTitle === title
         ? Promise.resolve()
-        : onTitleEdit(todo.id, todo.completed, newTitle)
-      : onDelete(todo.id);
+        : onTitleEdit(id, completed, newTitle)
+      : onDelete(id);
 
     promise.then(() => setIsEditFormActive(false));
   };
@@ -50,7 +51,7 @@ export const TodoItem: React.FC<Props> = ({
   return (
     <div
       data-cy="Todo"
-      className={classNames('todo', { completed: todo.completed })}
+      className={classNames('todo', { completed: completed })}
       onDoubleClick={() => setIsEditFormActive(true)}
     >
       <label className="todo__status-label">
@@ -58,8 +59,8 @@ export const TodoItem: React.FC<Props> = ({
           data-cy="TodoStatus"
           type="checkbox"
           className="todo__status"
-          checked={todo.completed}
-          onChange={() => onToggleStatus(todo.id, !todo.completed)}
+          checked={completed}
+          onChange={() => onToggleStatus(id, !completed)}
           disabled={isProcessed}
         />
       </label>
@@ -67,7 +68,7 @@ export const TodoItem: React.FC<Props> = ({
       {!isEditFormActive && (
         <>
           <span data-cy="TodoTitle" className="todo__title">
-            {todo.title}
+            {title}
           </span>
 
           <button
@@ -75,7 +76,7 @@ export const TodoItem: React.FC<Props> = ({
             className="todo__remove"
             data-cy="TodoDelete"
             onClick={() => {
-              onDelete(todo.id);
+              onDelete(id);
             }}
           >
             ×
