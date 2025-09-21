@@ -94,8 +94,9 @@ export const App: React.FC = () => {
           currentTodos.filter(todo => todo.id !== todoId),
         ),
       )
-      .catch(() => {
+      .catch(error => {
         showError(ErrorMessage.delete);
+        throw error;
       })
       .finally(() => {
         setProcessingIds(ids => ids.filter(id => id !== todoId));
