@@ -28,13 +28,19 @@ export const TodoItem: React.FC<Props> = ({
   const [newTitle, setNewTitle] = useState(`${title}`);
 
   const editTitle = () => {
-    const promise = newTitle
-      ? newTitle === title
-        ? Promise.resolve()
-        : onTitleEdit(id, completed, newTitle)
-      : onDelete(id);
+    let promise: Promise<void>;
 
-    promise.then(() => setIsEditFormActive(false));
+    if (newTitle) {
+      if (newTitle === title) {
+        promise = Promise.resolve();
+      } else {
+        promise = onTitleEdit(id, completed, newTitle);
+      }
+    } else {
+      promise = onDelete(id);
+    }
+
+    promise.then(() => setIsEditFormActive(false)).catch(() => {});
   };
 
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {

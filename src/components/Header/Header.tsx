@@ -6,7 +6,7 @@ type Props = {
   inputRef?: React.RefObject<HTMLInputElement>;
   title: string;
   isInputDisabled: boolean;
-  isButtonExists: boolean;
+  isButtonVisible: boolean;
   onTitleChange: (title: string) => void;
   onAddTodo: () => Promise<void>;
   reset: () => void;
@@ -18,7 +18,7 @@ export const Header: React.FC<Props> = ({
   inputRef,
   title,
   isInputDisabled,
-  isButtonExists,
+  isButtonVisible,
   onTitleChange,
   onAddTodo,
   reset,
@@ -31,7 +31,7 @@ export const Header: React.FC<Props> = ({
 
   return (
     <header className="todoapp__header">
-      {isButtonExists && (
+      {isButtonVisible && (
         <button
           type="button"
           className={classNames('todoapp__toggle-all', {

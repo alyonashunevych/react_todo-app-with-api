@@ -14,13 +14,32 @@ export const App: React.FC = () => {
   const [todos, setTodos] = useState<Todo[]>([]);
   const [tempTodo, setTempTodo] = useState<Todo>();
   const [errorMessage, setErrorMessage] = useState<ErrorMessage | ''>('');
-  const [filter, setFilter] = useState<Filter>(Filter.all);
+  const [filter, setFilter] = useState<Filter>(Filter.ALL);
   const [title, setTitle] = useState('');
   const [isInputDisabled, setIsInputDisabled] = useState(false);
-  const [processings, setProcessings] = useState<number[]>([]);
+  const [processingIds, setProcessingIds] = useState<number[]>([]);
 
   const inputRef = useRef<HTMLInputElement>(null);
   const errorTimer = useRef<NodeJS.Timeout | null>(null);
+
+  const activeTodos = useMemo(() => {
+    return todos.filter(todo => !todo.completed);
+  }, [todos]);
+
+  const completedTodos = useMemo(() => {
+    return todos.filter(todo => todo.completed);
+  }, [todos]);
+
+  const isFooterVisible = todos.length > 0 && activeTodos;
+  const isHeaderButtonVisible = todos.length > 0;
+  const isHeaderButtonActive = todos.every(todo => todo.completed);
+  const isTodoItemProcessed = tempTodo
+    ? processingIds.includes(tempTodo.id)
+    : false;
+
+  const isClearButtonDisabled = todos.every(todo => !todo.completed);
+
+  const handleCloseErrorNotification = () => setErrorMessage('');
 
   const showError = (message: ErrorMessage) => {
     setErrorMessage(message);
@@ -48,27 +67,24 @@ export const App: React.FC = () => {
 
   const filteredTodos = useMemo(() => {
     return todos.filter(todo => {
-      return filter === Filter.all
-        ? true
-        : filter === Filter.completed
-          ? todo.completed
-          : !todo.completed;
+      switch (filter) {
+        case Filter.ALL:
+          return true;
+        case Filter.COMPLETED:
+          return todo.completed;
+        case Filter.ACTIVE:
+          return !todo.completed;
+        default:
+          return false;
+      }
     });
   }, [filter, todos]);
-
-  const activeTodos = useMemo(() => {
-    return todos.filter(todo => !todo.completed);
-  }, [todos]);
-
-  const completedTodos = useMemo(() => {
-    return todos.filter(todo => todo.completed);
-  }, [todos]);
 
   const deleteTodo = (todoId: number) => {
     setErrorMessage('');
 
-    if (!processings.includes(todoId)) {
-      setProcessings(ids => [...ids, todoId]);
+    if (!processingIds.includes(todoId)) {
+      setProcessingIds(ids => [...ids, todoId]);
     }
 
     return todoService
@@ -82,7 +98,7 @@ export const App: React.FC = () => {
         showError(ErrorMessage.delete);
       })
       .finally(() => {
-        setProcessings(ids => ids.filter(id => id !== todoId));
+        setProcessingIds(ids => ids.filter(id => id !== todoId));
         setTimeout(() => {
           inputRef.current?.focus();
         }, 0);
@@ -92,7 +108,7 @@ export const App: React.FC = () => {
   const deleteCompletedTodos = async () => {
     const idsToDelete = completedTodos.map(todo => todo.id);
 
-    setProcessings(ids => [...ids, ...idsToDelete]);
+    setProcessingIds(ids => [...ids, ...idsToDelete]);
 
     const results = await Promise.allSettled(
       idsToDelete.map(id => todoService.deleteTodo(id)),
@@ -108,7 +124,7 @@ export const App: React.FC = () => {
       current.filter(todo => !successfullyDeletedIds.includes(todo.id)),
     );
 
-    setProcessings(ids =>
+    setProcessingIds(ids =>
       ids.filter(id => !successfullyDeletedIds.includes(id)),
     );
 
@@ -133,7 +149,7 @@ export const App: React.FC = () => {
     }
 
     setIsInputDisabled(true);
-    setProcessings(ids => [...ids, 0]);
+    setProcessingIds(ids => [...ids, 0]);
 
     setTempTodo({
       title: title.trim(),
@@ -166,8 +182,8 @@ export const App: React.FC = () => {
   ) => {
     setErrorMessage('');
 
-    if (!processings.includes(todoId)) {
-      setProcessings(ids => [...ids, todoId]);
+    if (!processingIds.includes(todoId)) {
+      setProcessingIds(ids => [...ids, todoId]);
     }
 
     return todoService
@@ -185,7 +201,7 @@ export const App: React.FC = () => {
         return Promise.reject();
       })
       .finally(() => {
-        setProcessings(ids => ids.filter(id => id !== todoId));
+        setProcessingIds(ids => ids.filter(id => id !== todoId));
       });
   };
 
@@ -196,7 +212,7 @@ export const App: React.FC = () => {
 
     const idsToUpdate = todosToUpdate.map(todo => todo.id);
 
-    setProcessings(ids => [...ids, ...idsToUpdate]);
+    setProcessingIds(ids => [...ids, ...idsToUpdate]);
 
     const results = await Promise.allSettled(
       idsToUpdate.map(id => todoService.updateTodo(id, isActiveTodosExist)),
@@ -212,7 +228,7 @@ export const App: React.FC = () => {
       ),
     );
 
-    setProcessings(ids =>
+    setProcessingIds(ids =>
       ids.filter(id => !successfullyUpdatedTodos.some(todo => todo.id === id)),
     );
 
@@ -237,8 +253,8 @@ export const App: React.FC = () => {
 
       <div className="todoapp__content">
         <Header
-          isButtonActive={todos.every(todo => todo.completed)}
-          isButtonExists={todos.length > 0}
+          isButtonActive={isHeaderButtonActive}
+          isButtonVisible={isHeaderButtonVisible}
           inputRef={inputRef}
           title={title}
           isInputDisabled={isInputDisabled}
@@ -252,7 +268,7 @@ export const App: React.FC = () => {
           <TodoList
             todos={filteredTodos}
             onDelete={deleteTodo}
-            processings={processings}
+            processingIds={processingIds}
             onToggleStatus={updateTodo}
             onTitleEdit={updateTodo}
           />
@@ -263,18 +279,18 @@ export const App: React.FC = () => {
             todo={tempTodo}
             key={`temp-${tempTodo.id}`}
             onDelete={deleteTodo}
-            isProcessed={processings.includes(tempTodo.id)}
+            isProcessed={isTodoItemProcessed}
             onToggleStatus={updateTodo}
             onTitleEdit={updateTodo}
           />
         )}
 
-        {todos.length !== 0 && activeTodos && (
+        {isFooterVisible && (
           <Footer
             numberOfActiveTodos={activeTodos.length}
             filter={filter}
             onFilterChange={setFilter}
-            isClearButtonDisabled={todos.every(todo => !todo.completed)}
+            isClearButtonDisabled={isClearButtonDisabled}
             onDeleteCompletedTodos={deleteCompletedTodos}
           />
         )}
@@ -282,7 +298,7 @@ export const App: React.FC = () => {
 
       <ErrorNotification
         errorMessage={errorMessage}
-        onClose={() => setErrorMessage('')}
+        onClose={handleCloseErrorNotification}
       />
     </div>
   );

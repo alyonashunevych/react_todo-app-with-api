@@ -5,7 +5,7 @@ import { TodoItem } from '../TodoItem';
 type Props = {
   todos: Todo[];
   onDelete: (todoId: number) => Promise<void>;
-  processings: number[];
+  processingIds: number[];
   onToggleStatus: (todoId: number, completed: boolean) => Promise<void>;
   onTitleEdit: (
     todoId: number,
@@ -17,7 +17,7 @@ type Props = {
 export const TodoList: React.FC<Props> = ({
   todos,
   onDelete,
-  processings,
+  processingIds,
   onToggleStatus,
   onTitleEdit,
 }) => {
@@ -28,7 +28,7 @@ export const TodoList: React.FC<Props> = ({
           todo={todo}
           onDelete={onDelete}
           key={todo.id}
-          isProcessed={processings.includes(todo.id)}
+          isProcessed={processingIds.includes(todo.id)}
           onToggleStatus={onToggleStatus}
           onTitleEdit={onTitleEdit}
         />
